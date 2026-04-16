@@ -11,8 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->enum('sexe',['M','F'])->default('M');
+        Schema::create('annonces_likes', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id')->constrained('users','id')->cascadeOnDelete();
+            $table->foreignId('annonce_id')->constrained('annonces','id')->cascadeOnDelete();
+            $table->timestamps();
         });
     }
 
@@ -21,8 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            //
-        });
+        Schema::dropIfExists('annonces_likes');
     }
 };

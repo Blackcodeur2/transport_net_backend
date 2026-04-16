@@ -14,8 +14,6 @@ return new class extends Migration
         Schema::create('trajets', function (Blueprint $table) {
             $table->id();
             $table->foreignId('gare_id')->nullable()->constrained('gares','id')->nullOnDelete();
-            $table->foreignId('depart')->constrained('gares','id')->cascadeOnDelete();
-            $table->foreignId('arrive')->constrained('gares','id')->cascadeOnDelete();
             $table->decimal('distance_km')->nullable();
             $table->integer('duree_heure')->nullable();
             $table->enum('type_trajet',['vip','classique'])->default('classique');

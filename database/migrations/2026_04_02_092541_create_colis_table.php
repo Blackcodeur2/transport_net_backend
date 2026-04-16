@@ -18,10 +18,8 @@ return new class extends Migration
             $table->string('chemin_image');
             $table->string('tel_destinataire');
             $table->string('nom_destinataire');
-            $table->foreignId('provenance')->constrained('gares','id')->cascadeOnDelete();
-            $table->foreignId('destination')->constrained('gares','id')->cascadeOnDelete();
             $table->boolean('visible')->default(true);
-            $table->enum('statut',['en attente','retire'])->default('en attente');
+            $table->enum('statut',['en attente','en route','retire'])->default('en attente');
             $table->timestamps();
         });
     }

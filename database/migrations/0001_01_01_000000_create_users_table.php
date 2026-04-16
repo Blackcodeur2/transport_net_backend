@@ -15,19 +15,21 @@ return new class extends Migration
             $table->id();
             $table->string('nom');
             $table->string('prenom');
+            $table->enum('sexe',['M','F'])->default('M');
             $table->string('email')->unique();
             $table->string('matricule')->unique()->nullable();
             $table->date('date_naissance');
+            $table->string('num_cni')->nullable();
             $table->string('region')->nullable();
             $table->string('ville')->nullable();
             $table->float('pos_lat')->nullable();
             $table->float('pos_lng')->nullable();
             $table->string('telephone')->unique();
-            $table->enum('role_user',['ADMIN','PROPRIETAIRE','CHEF_AGENCE','AGENT','CHAUFFEUR','CLIENT'])->default('CLIENT');
+            $table->enum('role_user',['ADMIN','PROPRIETAIRE','CHEF_AGENCE','AGENT','CHAUFFEUR','CLIENT','COMMERCIAL'])->default('CLIENT');
             $table->string('password');
             $table->timestamp('email_verified_at')->nullable();
             $table->rememberToken();
-            $table->enum('statut',['approuve','rejete','actif','innactif','en attente'])->default('en attente');
+            $table->enum('statut',['approuve','rejete','actif','inactif','en attente'])->default('en attente');
             $table->timestamps();
         });
 

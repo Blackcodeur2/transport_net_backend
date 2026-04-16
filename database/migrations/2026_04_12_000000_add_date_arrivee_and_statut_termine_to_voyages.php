@@ -12,6 +12,7 @@ return new class extends Migration
         Schema::table('voyages', function (Blueprint $table) {
             if (! Schema::hasColumn('voyages', 'date_arrivee')) {
                 $table->dateTime('date_arrivee')->nullable()->after('date_depart');
+                $table->double('duree_heure')->nullable()->after('date_arrivee');
             }
         });
 
@@ -25,6 +26,7 @@ return new class extends Migration
         Schema::table('voyages', function (Blueprint $table) {
             if (Schema::hasColumn('voyages', 'date_arrivee')) {
                 $table->dropColumn('date_arrivee');
+                $table->dropColumn('duree_heure');
             }
         });
 

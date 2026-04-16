@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('colis', function (Blueprint $table) {
-            $table->decimal('prix', 10, 2)->default(0);
-            $table->decimal('poids', 8, 2)->default(0)->after('prix');
+        Schema::table('trajets', function (Blueprint $table) {
+            $table->foreignId('ville_depart')->constrained('villes','id')->cascadeOnDelete();
+            $table->foreignId('ville_arrive')->constrained('villes','id')->cascadeOnDelete();
         });
     }
 
@@ -22,8 +22,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('colis', function (Blueprint $table) {
-            $table->dropColumn(['prix', 'poids']);
+        Schema::table('trajets', function (Blueprint $table) {
+            //
         });
     }
 };

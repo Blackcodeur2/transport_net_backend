@@ -16,7 +16,6 @@ return new class extends Migration
             $table->id();
             $table->foreignId('agence_id')->constrained('agences','id')->cascadeOnDelete();
             $table->string('nom');
-            $table->string('ville');
             $table->string('adresse');
             $table->string('telephone')->nullable();
             $table->boolean('is_active')->default(true);
