@@ -242,7 +242,7 @@ EOT;
                 $limit = max(1, min((int) ($args['limit'] ?? 20), 100));
 
                 $voyages = Voyage::query()
-                    ->with(['bus:id,immatriculation,nb_places,modele', 'trajet.gareDepart:id,nom,ville', 'trajet.gareArrivee:id,nom,ville'])
+                    ->with(['bus:id,immatriculation,nb_places,modele', 'trajet.villeDepart:id,nom', 'trajet.villeArrivee:id,nom'])
                     ->whereDate('date_depart', $date->toDateString())
                     ->limit($limit)
                     ->get();
@@ -253,13 +253,13 @@ EOT;
                 $villeD = $args['ville_depart'] ?? '';
                 $villeA = $args['ville_arrivee'] ?? '';
 
-                $trajets = Trajet::whereHas('gareDepart', function ($q) use ($villeD) {
-                        $q->where('ville', 'like', "%{$villeD}%");
+                $trajets = Trajet::whereHas('villeDepart', function ($q) use ($villeD) {
+                        $q->where('nom', 'like', "%{$villeD}%");
                     })
-                    ->whereHas('gareArrivee', function ($q) use ($villeA) {
-                        $q->where('ville', 'like', "%{$villeA}%");
+                    ->whereHas('villeArrivee', function ($q) use ($villeA) {
+                        $q->where('nom', 'like', "%{$villeA}%");
                     })
-                    ->with(['gareDepart:id,nom,ville', 'gareArrivee:id,nom,ville'])
+                    ->with(['villeDepart:id,nom', 'villeArrivee:id,nom'])
                     ->limit(10)
                     ->get();
                 return ['ville_depart' => $villeD, 'ville_arrivee' => $villeA, 'results' => $trajets];
@@ -267,7 +267,7 @@ EOT;
 
             if ($name === 'get_user_reservations') {
                 $resas = Reservation::where('user_id', $user->id)
-                    ->with(['voyage.trajet.gareDepart', 'voyage.trajet.gareArrivee'])
+                    ->with(['voyage.trajet.villeDepart', 'voyage.trajet.villeArrivee'])
                     ->orderByDesc('created_at')
                     ->limit(5)
                     ->get();

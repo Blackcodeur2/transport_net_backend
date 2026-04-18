@@ -14,29 +14,36 @@ class TrajetController extends Controller
     {
         // Validation des données d'entrée
         $request->validate([
-            'depart' => 'required|exists:gares,id',
-            'arrivee' => 'required|exists:gares,id',
+            'ville_depart' => 'required|exists:villes,id',
+            'ville_arrive' => 'required|exists:villes,id',
             'type_trajet' => 'required',
             'prix' => 'required|numeric',
-            'gare_id' => 'required|exist:gares,id',
-            'heure_depart' => 'required|date_format:H:i',
-            'heure_arrivee' => 'required|date_format:H:i|after:heure_depart',
+            'gare_id' => 'required|exists:gares,id',
         ]);
         // Création du trajet
-        $trajet = Trajet::create($request->all());
+        $trajet = Trajet::create($request->only([
+            'gare_id',
+            'ville_depart',
+            'ville_arrive',
+            'type_trajet',
+            'prix',
+            'distance_km',
+            'duree_heure',
+            'is_active',
+        ]));
 
         return response()->json($trajet, 201);
     }
 
     public function getTrajets()
     {
-        $trajets = Trajet::with(['gareDepart', 'gareArrivee', 'bus'])->get();
+        $trajets = Trajet::with(['villeDepart', 'villeArrivee', 'gare'])->get();
         return response()->json($trajets);
     }
 
     public function getTrajetById($id)
     {
-        $trajet = Trajet::with(['gareDepart', 'gareArrivee', 'bus'])->find($id);
+        $trajet = Trajet::with(['villeDepart', 'villeArrivee', 'gare'])->find($id);
         if (!$trajet) {
             return response()->json(['message' => 'Trajet non trouvé'], 404);
         }
@@ -49,7 +56,7 @@ class TrajetController extends Controller
         $trajets = Trajet::select('trajets.*', DB::raw('COUNT(reservations.id) as total_reservations'))
             ->join('voyages', 'voyages.trajet_id', '=', 'trajets.id')
             ->join('reservations', 'reservations.voyage_id', '=', 'voyages.id')
-            ->with(['gareDepart:id,nom,ville', 'gareArrivee:id,nom,ville'])
+            ->with(['villeDepart:id,nom', 'villeArrivee:id,nom'])
             ->groupBy('trajets.id')
             ->orderByDesc('total_reservations')
             ->take(5)
@@ -75,12 +82,10 @@ class TrajetController extends Controller
     public function updateTrajet($id, Request $request)
     {
         $request->validate([
-            'gare_depart_id' => 'sometimes|required|exists:gares,id',
-            'gare_arrivee_id' => 'sometimes|required|exists:gares,id',
-            'bus_id' => 'sometimes|required|exists:buses,id',
+            'ville_depart' => 'sometimes|required|exists:villes,id',
+            'ville_arrive' => 'sometimes|required|exists:villes,id',
+            'gare_id' => 'sometimes|required|exists:gares,id',
             'prix' => 'sometimes|required|numeric',
-            'heure_depart' => 'sometimes|required|date_format:H:i',
-            'heure_arrivee' => 'sometimes|required|date_format:H:i|after:heure_depart',
         ]);
 
         $trajet = Trajet::find($id);
@@ -88,7 +93,16 @@ class TrajetController extends Controller
             return response()->json(['message' => 'Trajet non trouvé'], 404);
         }
 
-        $trajet->update($request->all());
+        $trajet->update($request->only([
+            'gare_id',
+            'ville_depart',
+            'ville_arrive',
+            'type_trajet',
+            'prix',
+            'distance_km',
+            'duree_heure',
+            'is_active',
+        ]));
         return response()->json($trajet);
     }
 }

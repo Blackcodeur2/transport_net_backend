@@ -24,8 +24,8 @@ class ReservationController extends Controller
         $reservation = Reservation::with([
             'user',
             'voyage.bus',
-            'voyage.trajet.gareDepart',
-            'voyage.trajet.gareArrivee',
+            'voyage.trajet.villeDepart',
+            'voyage.trajet.villeArrivee',
             'gare.agence',
             'paiements'
         ])
@@ -53,8 +53,8 @@ class ReservationController extends Controller
             'siege'          => $reservation->place ?? 'N/A',
             'prix'           => $reservation->prix ?? 0,
             'statut'         => $reservation->statut,
-            'depart'         => $trajet?->gareDepart?->ville ?? 'N/A',
-            'arrivee'        => $trajet?->gareArrivee?->ville ?? 'N/A',
+            'depart'         => $trajet?->villeDepart?->nom ?? 'N/A',
+            'arrivee'        => $trajet?->villeArrivee?->nom ?? 'N/A',
             'dateDepart'     => $voyage?->date_depart
                                  ? Carbon::parse($voyage->date_depart)->translatedFormat('d F Y')
                                  : 'N/A',
@@ -141,8 +141,8 @@ class ReservationController extends Controller
 
         $reservations = Reservation::with([
             'voyage.bus',
-            'voyage.trajet.gareDepart',
-            'voyage.trajet.gareArrivee',
+            'voyage.trajet.villeDepart',
+            'voyage.trajet.villeArrivee',
             'gare.agence',
             'paiements',
         ])
@@ -187,8 +187,8 @@ class ReservationController extends Controller
         $reservation = Reservation::with([
             'user',
             'voyage.bus',
-            'voyage.trajet.gareDepart',
-            'voyage.trajet.gareArrivee',
+            'voyage.trajet.villeDepart',
+            'voyage.trajet.villeArrivee',
             'gare.agence',
             'paiements',
         ])
@@ -355,7 +355,7 @@ class ReservationController extends Controller
 
         $pdf = Pdf::loadView('pdf.reservations', [
             'agenceName' => $gare->agence->nom ?? 'Agence',
-            'gareName' => $gare->nom . ' - ' . $gare->ville,
+            'gareName' => $gare->nom . ' - ' . ($gare->ville?->nom ?? ''),
             'reservations' => $reservations
         ]);
 

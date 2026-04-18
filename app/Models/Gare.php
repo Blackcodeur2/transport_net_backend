@@ -2,21 +2,23 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Database\Factories\GareFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class Gare extends Model
 {
     /** @use HasFactory<GareFactory> */
     use HasFactory;
+
     protected $fillable = [
         'agence_id',
         'nom',
-        'ville',
+        'ville_id',
         'adresse',
         'telephone',
     ];
+
     public function agence()
     {
         return $this->belongsTo(Agence::class);
@@ -45,5 +47,10 @@ class Gare extends Model
     public function reservations()
     {
         return $this->hasMany(Reservation::class);
+    }
+
+    public function ville()
+    {
+        return $this->belongsTo(Ville::class, 'ville_id');
     }
 }

@@ -11,6 +11,7 @@ use App\Models\Bus;
 use App\Models\Trajet;
 use App\Models\User;
 use App\Models\Agence;
+use App\Models\Ville;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -24,9 +25,11 @@ class VoyageController extends Controller
             'bus_id' => 'required|exists:buses,id',
             'chauffeur_id' => 'required|exists:users,id',
             'prix' => 'required|numeric',
-            'statut' => 'required|in:en attente,en cours,annule',
+            'statut' => 'required|in:en attente,en cours,annule,termine',
             'date_depart' => 'nullable|date',
+            'date_arrivee' => 'nullable|date',
             'duree_heure' => 'required|integer',
+
         ]);
 
         $user = Auth::user();
@@ -52,7 +55,7 @@ class VoyageController extends Controller
             return response()->json(['message' => 'Chauffeur non autorisé.'], 403);
         }
 
-        if (!$trajet || (!in_array($trajet->depart, $gareIds) && !in_array($trajet->arrivee_id, $gareIds))) {
+        if (! $trajet || ! in_array($trajet->gare_id, $gareIds)) {
             return response()->json(['message' => 'Trajet non autorisé.'], 403);
         }
 
@@ -76,8 +79,8 @@ class VoyageController extends Controller
             'num_voyage' => $voyage->num_voyage,
             'date_depart' => $voyage->date_depart,
             'heure_depart' => $voyage->date_depart ? date('H:i', strtotime($voyage->date_depart)) : null,
-            'ville_depart' => $trajet->depart ? Gare::find($trajet->depart)?->ville : 'Inconnu',
-            'ville_arrivee' => $trajet->arrivee_id ? Gare::find($trajet->arrivee_id)?->ville : 'Inconnu',
+            'ville_depart' => $trajet->villeDepart?->nom ?? 'Inconnu',
+            'ville_arrivee' => $trajet->villeArrivee?->nom ?? 'Inconnu',
             'vehicule_immatriculation' => $bus->immatriculation,
             'statut' => $voyage->statut,
             'chauffeur' => $chauffeur,
@@ -94,19 +97,19 @@ class VoyageController extends Controller
 
         $gareIds = $request->user()->gare_id;
         $voyages = Voyage::where('gare_id', $gareIds)
-            ->with(['trajet', 'bus', 'chauffeur'])
+            ->with(['trajet.villeDepart', 'trajet.villeArrivee', 'bus', 'chauffeur'])
             ->get()
             ->map(function ($voyage) {
-                $depart = $voyage->trajet ? Gare::find($voyage->trajet->depart_id) : null;
-                $arrivee = $voyage->trajet ? Gare::find($voyage->trajet->arrivee_id) : null;
+                $depart = $voyage->trajet?->villeDepart;
+                $arrivee = $voyage->trajet?->villeArrivee;
 
                 return [
                     'id' => $voyage->id,
                     'num_voyage' => $voyage->num_voyage,
                     'date_depart' => $voyage->date_depart,
                     'heure_depart' => $voyage->date_depart ? date('H:i', strtotime($voyage->date_depart)) : null,
-                    'ville_depart' => $depart?->ville ?? 'Inconnu',
-                    'ville_arrivee' => $arrivee?->ville ?? 'Inconnu',
+                    'ville_depart' => $depart?->nom ?? 'Inconnu',
+                    'ville_arrivee' => $arrivee?->nom ?? 'Inconnu',
                     'vehicule_immatriculation' => $voyage->bus?->immatriculation,
                     'statut' => $voyage->statut,
                     'chauffeur' => $voyage->chauffeur,
@@ -128,12 +131,12 @@ class VoyageController extends Controller
         $gare = Gare::find($gareIds);
 
         $voyages = Voyage::where('gare_id', $gareIds)
-            ->with(['trajet.gareDepart', 'trajet.gareArrivee', 'bus', 'chauffeur'])
+            ->with(['trajet.villeDepart', 'trajet.villeArrivee', 'bus', 'chauffeur'])
             ->get();
 
         $pdf = Pdf::loadView('pdf.voyages', [
             'agenceName' => $agence->nom,
-            'gareName' => $gare ? $gare->nom . ' - ' . $gare->ville : 'Inconnue',
+            'gareName' => $gare ? $gare->nom . ' - ' . ($gare->ville?->nom ?? '') : 'Inconnue',
             'voyages' => $voyages
         ]);
 
@@ -146,8 +149,8 @@ class VoyageController extends Controller
     {
         $chauffeurId = $request->user()->id;
         $voyages = Voyage::with([
-            'trajet.gareDepart',
-            'trajet.gareArrivee',
+            'trajet.villeDepart',
+            'trajet.villeArrivee',
             'trajet',
             'bus',
             'chauffeur',
@@ -199,8 +202,10 @@ class VoyageController extends Controller
             'bus_id' => 'sometimes|required|exists:buses,id',
             'chauffeur_id' => 'sometimes|required|exists:users,id',
             'prix' => 'sometimes|required|numeric',
-            'statut' => 'sometimes|required|in:en attente,en cours,annule',
+            'statut' => 'sometimes|required|in:en attente,en cours,annule,termine',
             'date_depart' => 'sometimes|nullable|date',
+            'date_arrivee' => 'sometimes|nullable|date',
+
         ]);
 
         $voyage = Voyage::find($id);
@@ -218,11 +223,12 @@ class VoyageController extends Controller
         $promoTrips = Voyage::select('id', 'num_voyage', 'statut', 'trajet_id', 'bus_id','gare_id', 'chauffeur_id', 'date_depart','promo')
             ->with([
                 'bus:id,immatriculation,nb_places,modele,code_bus',
-                'trajet:id,depart_id,arrivee_id,prix',
-                'trajet.gareDepart:id,nom,ville',
-                'trajet.gareArrivee:id,nom,ville',
+                'trajet:id,ville_depart,ville_arrive,prix',
+                'trajet.villeDepart:id,nom',
+                'trajet.villeArrivee:id,nom',
                 'chauffeur:id,nom,telephone',
-                'gare:id,nom,ville,adresse,agence_id',
+                'gare:id,nom,ville_id,adresse,agence_id',
+                'gare.ville:id,nom',
                 'gare.agence:id,nom'
             ])->where('promo',false)
             ->get();
@@ -252,11 +258,12 @@ class VoyageController extends Controller
         $voyages = Voyage::select('id', 'num_voyage', 'statut', 'trajet_id', 'bus_id','gare_id', 'chauffeur_id', 'date_depart','promo')
             ->with([
                 'bus:id,immatriculation,nb_places,modele,code_bus',
-                'trajet:id,depart_id,arrivee_id,prix',
-                'trajet.gareDepart:id,nom,ville',
-                'trajet.gareArrivee:id,nom,ville',
+                'trajet:id,ville_depart,ville_arrive,prix',
+                'trajet.villeDepart:id,nom',
+                'trajet.villeArrivee:id,nom',
                 'chauffeur:id,nom,telephone',
-                'gare:id,nom,ville,adresse,agence_id',
+                'gare:id,nom,ville_id,adresse,agence_id',
+                'gare.ville:id,nom',
                 'gare.agence:id,nom'
             ])
             ->where('date_depart', '>=', now()->toDateString())
@@ -276,11 +283,12 @@ class VoyageController extends Controller
     {
         $voyage = Voyage::with([
             'bus:id,immatriculation,nb_places,modele,code_bus',
-            'trajet:id,depart_id,arrivee_id,prix',
-            'trajet.gareDepart:id,nom,ville',
-            'trajet.gareArrivee:id,nom,ville',
+            'trajet:id,ville_depart,ville_arrive,prix',
+            'trajet.villeDepart:id,nom',
+            'trajet.villeArrivee:id,nom',
             'chauffeur:id,nom,telephone',
-            'gare:id,nom,ville,adresse,agence_id',
+            'gare:id,nom,ville_id,adresse,agence_id',
+            'gare.ville:id,nom',
             'gare.agence:id,nom'
         ])->find($id);
 

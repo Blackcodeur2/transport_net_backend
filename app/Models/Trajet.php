@@ -8,12 +8,13 @@ class Trajet extends Model
 {
     protected $fillable = [
         'gare_id',
-        'depart_id',
-        'arrivee_id',
+        'ville_depart',
+        'ville_arrive',
         'distance_km',
         'duree_heure',
         'type_trajet',
         'prix',
+        'is_active',
     ];
 
     public function voyages()
@@ -21,13 +22,18 @@ class Trajet extends Model
         return $this->hasMany(Voyage::class);
     }
 
-    public function gareDepart()
+    public function gare()
     {
-        return $this->belongsTo(Gare::class, 'depart_id');
+        return $this->belongsTo(Gare::class);
     }
 
-    public function gareArrivee()
+    public function villeDepart()
     {
-        return $this->belongsTo(Gare::class, 'arrivee_id');
+        return $this->belongsTo(Ville::class, 'ville_depart');
+    }
+
+    public function villeArrivee()
+    {
+        return $this->belongsTo(Ville::class, 'ville_arrive');
     }
 }

@@ -17,7 +17,10 @@ class VoyageRessource extends JsonResource
         return [
             'id' => $this->id,
             'date_depart' => $this->date_depart,
+            'date_arrivee' => $this->date_arrivee,
+            'duree_heure' => $this->duree_heure,
             'promo' => $this->promo,
+
 
             'bus' => [
                 'immatriculation' => $this->bus->immatriculation,
@@ -34,23 +37,21 @@ class VoyageRessource extends JsonResource
             'trajet' => [
                 'prix' => $this->trajet->prix,
 
-                'depart' => $this->trajet->gareDepart ? [
-                    'nom' => $this->trajet->gareDepart->nom,
-                    'ville' => $this->trajet->gareDepart->ville,
+                'depart' => $this->trajet->villeDepart ? [
+                    'nom' => $this->trajet->villeDepart->nom,
                 ] : null,
 
-                'arrivee' => $this->trajet->gareArrivee ? [
-                    'nom' => $this->trajet->gareArrivee->nom,
-                    'ville' => $this->trajet->gareArrivee->ville,
+                'arrivee' => $this->trajet->villeArrivee ? [
+                    'nom' => $this->trajet->villeArrivee->nom,
                 ] : null,
             ],
-            'ville_depart' => $this->trajet->gareDepart->ville ?? null,
-            'ville_arrivee' => $this->trajet->gareArrivee->ville ?? null,
+            'ville_depart' => $this->trajet->villeDepart->nom ?? null,
+            'ville_arrivee' => $this->trajet->villeArrivee->nom ?? null,
             'heure_depart' => $this->date_depart ? date('H:i', strtotime($this->date_depart)) : null,
             'gare' => $this->gare ? [
                 'id' => $this->gare->id,
                 'nom' => $this->gare->nom,
-                'ville' => $this->gare->ville,
+                'ville' => $this->gare->ville?->nom,
                 'adresse' => $this->gare->adresse,
                 'agence' => $this->gare->agence ? [
                     'nom' => $this->gare->agence->nom,

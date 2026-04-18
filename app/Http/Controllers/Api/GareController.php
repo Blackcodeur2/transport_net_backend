@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Gare;
+use App\Models\Ville;
 use Illuminate\Http\Request;
 
 class GareController extends Controller
@@ -26,7 +27,7 @@ class GareController extends Controller
     {
         $request->validate([
             'agence_id' => 'sometimes|required|exists:agences,id',
-            'ville' => 'sometimes|required|string|max:255',
+            'ville_id' => 'sometimes|required|exists:villes,id',
             'quartier' => 'sometimes|required|string|max:255',
             'telephone' => 'sometimes|required|string|max:20',
         ]);
@@ -37,9 +38,13 @@ class GareController extends Controller
         }
 
         $data = $request->all();
-        if ($request->has(['ville', 'quartier'])) {
-            $data['nom'] = $request->ville . ' - ' . $request->quartier;
-            $data['adresse'] = $request->quartier;
+
+        if ($request->has('ville_id')) {
+            $ville = Ville::find($request->ville_id);
+            if ($ville && $request->filled('quartier')) {
+                $data['nom'] = $ville->nom . ' - ' . $request->quartier;
+                $data['adresse'] = $request->quartier;
+            }
         }
 
         $gare->update($data);
@@ -61,13 +66,18 @@ class GareController extends Controller
     {
         $request->validate([
             'agence_id' => 'required|exists:agences,id',
-            'ville' => 'required|string|max:255',
+            'ville_id' => 'required|exists:villes,id',
             'quartier' => 'required|string|max:255',
             'telephone' => 'required|string|max:20',
         ]);
 
+        $ville = Ville::find($request->ville_id);
+        if (! $ville) {
+            return response()->json(['message' => 'Ville introuvable'], 404);
+        }
+
         $data = $request->all();
-        $data['nom'] = $request->ville . ' - ' . $request->quartier;
+        $data['nom'] = $ville->nom . ' - ' . $request->quartier;
         $data['adresse'] = $request->quartier;
 
         $gare = Gare::create($data);

@@ -20,7 +20,7 @@ class ReservationResource extends JsonResource
             'gare' => [
                 'id' => $this->gare->id,
                 'nom' => $this->gare->nom,
-                'ville' => $this->gare->ville,
+                'ville' => $this->gare->ville?->nom,
                 'agence' => $this->gare->agence ? [
                     'nom' => $this->gare->agence->nom,
                 ] : null,

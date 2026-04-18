@@ -1,10 +1,12 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
-use App\Models\Ville;
+use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreVilleRequest;
 use App\Http\Requests\UpdateVilleRequest;
+use App\Models\Ville;
+use Illuminate\Http\Request;
 
 class VilleController extends Controller
 {
@@ -13,15 +15,41 @@ class VilleController extends Controller
      */
     public function index()
     {
-        //
+        $villes = Ville::all();
+
+        return response()->json([
+            'statut' => true,
+            'data' => $villes,
+        ]);
     }
 
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
+    public function create(Request $request)
     {
-        //
+        $request->validate([
+            'nom' => 'required|string',
+            'region' => 'required|string',
+        ]);
+
+        $ville = Ville::where('nom', $request->nom)->where('region', $request->region)->get();
+        if (! $ville) {
+            $vi = Ville::create([
+                'nom' => $request->nom,
+                'region' => $request->region,
+            ]);
+
+            return response()->json([
+                'statut' => true,
+                'data' => $vi,
+            ], 201);
+        } else {
+            return response()->json([
+                'statut' => false,
+                'message' => 'Cette ville existe deja',
+            ]);
+        }
     }
 
     /**

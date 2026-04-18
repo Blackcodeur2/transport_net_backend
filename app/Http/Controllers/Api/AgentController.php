@@ -62,8 +62,8 @@ class AgentController extends Controller
             ], 404);
         }
 
-        $routes = Trajet::with(['gareDepart', 'gareArrivee'])
-            ->where('depart_id', $gareId)
+        $routes = Trajet::with(['villeDepart', 'villeArrivee'])
+            ->where('gare_id', $gareId)
             ->get();
 
         return response()->json([
@@ -84,7 +84,7 @@ class AgentController extends Controller
             ], 404);
         }
 
-        $voyages = Voyage::with(['trajet.gareDepart', 'trajet.gareArrivee', 'bus', 'chauffeur'])
+        $voyages = Voyage::with(['trajet.villeDepart', 'trajet.villeArrivee', 'bus', 'chauffeur'])
             ->where('gare_id', $gareId)
             ->orderBy('date_depart', 'asc')
             ->get();
@@ -102,7 +102,7 @@ class AgentController extends Controller
             'date' => 'required|date',
         ]);
 
-        $voyages = Voyage::with(['trajet.gareDepart', 'trajet.gareArrivee', 'bus', 'chauffeur'])
+        $voyages = Voyage::with(['trajet.villeDepart', 'trajet.villeArrivee', 'bus', 'chauffeur'])
             ->where('trajet_id', $request->route_id)
             ->whereDate('date_depart', $request->date)
             ->where('statut', '!=', 'annule')
@@ -177,7 +177,7 @@ class AgentController extends Controller
             'code' => 'required|string'
         ]);
 
-        $reservation = Reservation::with(['user', 'voyage.trajet.gareDepart', 'voyage.trajet.gareArrivee'])
+        $reservation = Reservation::with(['user', 'voyage.trajet.villeDepart', 'voyage.trajet.villeArrivee'])
             ->where('num_reservation', $request->code)
             ->first();
 
@@ -242,8 +242,8 @@ class AgentController extends Controller
         $query = Reservation::with([
             'user',
             'voyage.bus',
-            'voyage.trajet.gareDepart',
-            'voyage.trajet.gareArrivee',
+            'voyage.trajet.villeDepart',
+            'voyage.trajet.villeArrivee',
             'gare.agence',
             'paiements'
         ])->where('id', $id);
@@ -282,8 +282,8 @@ class AgentController extends Controller
             'siege'          => $reservation->place ?? 'N/A',
             'prix'           => $reservation->prix ?? 0,
             'statut'         => $reservation->statut,
-            'depart'         => $trajet?->gareDepart?->ville ?? 'N/A',
-            'arrivee'        => $trajet?->gareArrivee?->ville ?? 'N/A',
+            'depart'         => $trajet?->villeDepart?->nom ?? 'N/A',
+            'arrivee'        => $trajet?->villeArrivee?->nom ?? 'N/A',
             'dateDepart'     => $voyage?->date_depart
                                  ? \Carbon\Carbon::parse($voyage->date_depart)->translatedFormat('d F Y')
                                  : 'N/A',

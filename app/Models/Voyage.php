@@ -123,16 +123,6 @@ class Voyage extends Model
         }
     }
 
-    public function depart()
-    {
-        return $this->belongsTo(Gare::class, 'depart');
-    }
-
-    public function arrivee()
-    {
-        return $this->belongsTo(Gare::class, 'arrivee');
-    }
-
     public function chauffeur()
     {
         return $this->belongsTo(User::class);

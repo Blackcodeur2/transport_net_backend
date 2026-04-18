@@ -19,13 +19,11 @@ class TrajetResource extends JsonResource
             'prix' => $this->prix,
 
             'depart' => [
-                'nom' => $this->gareDepart->nom ?? '...',
-                'ville' => $this->gareDepart->ville ?? '...',
+                'nom' => $this->villeDepart->nom ?? '...',
             ],
 
             'arrivee' => [
-                'nom' => $this->gareArrivee->nom ?? '...',
-                'ville' => $this->gareArrivee->ville ?? '...',
+                'nom' => $this->villeArrivee->nom ?? '...',
             ],
 
             'total_reservations' => $this->total_reservations ?? $this->voyages_count

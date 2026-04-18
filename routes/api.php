@@ -13,6 +13,8 @@ use App\Http\Controllers\Api\AssistantIaController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Api\PaiementController;
+use App\Http\Controllers\Api\VilleController;
+
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
@@ -27,14 +29,14 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::middleware('auth:sanctum')->group(function() {
-    Route::prefix('client')->controller('KWCDocumentController')->group(function(){
-        Route::post('/upload-cni', 'saveCNI');
-        Route::post('/kyc/submit', 'saveProprietaireKWC');
+    Route::prefix('client')->group(function(){
+        Route::post('/upload-cni', [KWCDocumentController::class, 'saveCNI']);
+        Route::post('/kyc/submit', [KWCDocumentController::class, 'saveProprietaireKWC']);
     });
 
-    Route::prefix('proprietaire')->controller('KWCDocumentController')->group(function(){
-        Route::post('/upload-cni', 'saveCNI');
-        Route::post('/kyc/submit', 'saveProprietaireKWC');
+    Route::prefix('proprietaire')->group(function(){
+        Route::post('/upload-cni', [KWCDocumentController::class, 'saveCNI']);
+        Route::post('/kyc/submit', [KWCDocumentController::class, 'saveProprietaireKWC']);
     });
 });
 // Si l'utilisateur est authentifie et verifie  , 'verified'
@@ -174,6 +176,10 @@ Route::middleware(['auth:sanctum','verified'])->group(function () {
         Route::get('/reservations/{id}', [ReservationController::class, 'getReservationByIdAdmin']);
         Route::put('/reservations/{id}', [ReservationController::class, 'updateReservationStatus']);
     }); 
+
+    Route::get('/villes', [VilleController::class, 'index']);
+    Route::post('/villes', [VilleController::class, 'create']);
 });
+
 
 
