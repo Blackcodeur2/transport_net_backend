@@ -175,10 +175,14 @@ Route::middleware(['auth:sanctum','verified'])->group(function () {
         Route::get('/reservations', [ReservationController::class, 'getAllReservations']);
         Route::get('/reservations/{id}', [ReservationController::class, 'getReservationByIdAdmin']);
         Route::put('/reservations/{id}', [ReservationController::class, 'updateReservationStatus']);
+
+        // Villes
+        Route::post('/villes', [VilleController::class, 'store']);
+        Route::put('/villes/{ville}', [VilleController::class, 'update']);
+        Route::delete('/villes/{ville}', [VilleController::class, 'destroy']);
     }); 
 
     Route::get('/villes', [VilleController::class, 'index']);
-    Route::post('/villes', [VilleController::class, 'create']);
 });
 
 
