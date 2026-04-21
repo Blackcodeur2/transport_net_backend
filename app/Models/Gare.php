@@ -53,4 +53,9 @@ class Gare extends Model
     {
         return $this->belongsTo(Ville::class, 'ville_id');
     }
+
+    public function colis()
+    {
+        return $this->hasMany(Colis::class, 'gare_id');
+    }
 }
