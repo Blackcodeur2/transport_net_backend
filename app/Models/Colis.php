@@ -16,10 +16,9 @@ class Colis extends Model
         'chemin_image',
         'tel_destinataire',
         'nom_destinataire',
-        'provenance',
-        'destination',
         'prix',
         'poids',
+        'gare_id',
         'voyage_id',
         'visible',
         'statut'
@@ -35,13 +34,9 @@ class Colis extends Model
         return $this->belongsTo(Voyage::class, 'voyage_id');
     }
 
-    public function gareProvenance()
+    public function gares()
     {
-        return $this->belongsTo(Gare::class, 'provenance');
+        return  $this->belongsTo(Gare::class, 'gare_id');
     }
 
-    public function gareDestination()
-    {
-        return $this->belongsTo(Gare::class, 'destination');
-    }
 }

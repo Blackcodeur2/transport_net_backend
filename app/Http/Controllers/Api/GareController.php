@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
+use App\Models\Agence;
 use App\Models\Gare;
 use App\Models\Ville;
 use Illuminate\Http\Request;
@@ -40,9 +41,10 @@ class GareController extends Controller
         $data = $request->all();
 
         if ($request->has('ville_id')) {
+            $agence = Agence::find($request->agence_id);
             $ville = Ville::find($request->ville_id);
             if ($ville && $request->filled('quartier')) {
-                $data['nom'] = $ville->nom . ' - ' . $request->quartier;
+                $data['nom'] = $agence->nom . ' - ' . $request->quartier;
                 $data['adresse'] = $request->quartier;
             }
         }
@@ -77,7 +79,8 @@ class GareController extends Controller
         }
 
         $data = $request->all();
-        $data['nom'] = $ville->nom . ' - ' . $request->quartier;
+        $agence = Agence::find($request->agence_id);
+        $data['nom'] = $agence->nom . ' - ' . $request->quartier;
         $data['adresse'] = $request->quartier;
 
         $gare = Gare::create($data);

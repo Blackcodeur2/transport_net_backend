@@ -45,9 +45,8 @@ class ColisController extends Controller
             return response()->json(['statut' => false, 'message' => 'Gare non assignée'], 404);
         }
 
-        $colis = Colis::with(['user:id,nom,prenom,telephone,num_cni', 'gareProvenance:id,nom,ville', 'gareDestination:id,nom,ville', 'voyage.bus'])
-            ->where('provenance', $user->gare_id)
-            ->orWhere('destination', $user->gare_id)
+        $colis = Colis::with(['user:id,nom,prenom,telephone,num_cni', 'voyage.bus'])
+            ->where('voyage_id', $user->gare_id)
             ->latest()
             ->get();
 
@@ -93,7 +92,7 @@ class ColisController extends Controller
             'statut' => 'en attente'
         ]);
 
-        $colis->load(['user', 'gareProvenance', 'gareDestination', 'voyage.bus']);
+        $colis->load(['user', 'voyage.bus']);
 
         return response()->json([
             'statut' => true, 
@@ -116,9 +115,7 @@ class ColisController extends Controller
 
         $gareIds = \App\Models\Gare::where('agence_id', $gare->agence_id)->pluck('id');
 
-        $colis = Colis::with(['user:id,nom,prenom,telephone,num_cni', 'gareProvenance:id,nom,ville', 'gareDestination:id,nom,ville', 'voyage.bus'])
-            ->whereIn('provenance', $gareIds)
-            ->orWhereIn('destination', $gareIds)
+        $colis = Colis::with(['user:id,nom,prenom,telephone,num_cni','voyage.bus'])
             ->latest()
             ->get();
 

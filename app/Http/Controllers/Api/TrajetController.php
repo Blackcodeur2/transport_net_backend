@@ -18,6 +18,7 @@ class TrajetController extends Controller
             'ville_arrive' => 'required|exists:villes,id',
             'type_trajet' => 'required',
             'prix' => 'required|numeric',
+            'distance_km' => 'sometimes|numeric',
             'gare_id' => 'required|exists:gares,id',
         ]);
         // Création du trajet
@@ -28,8 +29,6 @@ class TrajetController extends Controller
             'type_trajet',
             'prix',
             'distance_km',
-            'duree_heure',
-            'is_active',
         ]));
 
         return response()->json($trajet, 201);
@@ -86,6 +85,7 @@ class TrajetController extends Controller
             'ville_arrive' => 'sometimes|required|exists:villes,id',
             'gare_id' => 'sometimes|required|exists:gares,id',
             'prix' => 'sometimes|required|numeric',
+            'distance_km' => 'sometimes|integer',
         ]);
 
         $trajet = Trajet::find($id);

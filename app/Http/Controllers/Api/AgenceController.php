@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Str;
 
 
 class AgenceController extends Controller
@@ -477,6 +478,8 @@ class AgenceController extends Controller
             return response()->json(['message' => 'Agence introuvable.'], 404);
         }
 
+        $matricule = $this->generateMatricule($request->role_user);
+
         $staff = User::create([
             'nom' => $request->nom,
             'prenom' => $request->prenom,
@@ -485,6 +488,7 @@ class AgenceController extends Controller
             'num_cni' => $request->num_cni,
             'date_naissance' => $request->date_naissance,
             'role_user' => $request->role_user,
+            'matricule' => $matricule,
             'password' => Hash::make($request->password),
             'gare_id' => $gare->id,
         ]);
@@ -494,6 +498,23 @@ class AgenceController extends Controller
         ]);
 
         return response()->json($staff, 201);
+    }
+
+    protected function generateMatricule($role)
+    {
+        $i = "";
+        do {
+            if($role == "AGENT"){
+                $i = "AG";
+            }elseif($role == "CHAUFFEUR"){
+                $i = "CH";
+            }else{
+                $i = "CHF";
+            }
+            $matricule = $i . strtoupper(Str::random(8)). date('m-d') ;
+        } while (User::where('matricule', $matricule)->exists());
+
+        return $matricule;
     }
 
     public function createBus(Request $request)
@@ -534,6 +555,7 @@ class AgenceController extends Controller
             'ville_depart' => 'required|exists:villes,id',
             'ville_arrive' => 'required|exists:villes,id',
             'prix' => 'required|numeric',
+            'distance_km' => 'sometimes|integer',
             'type_trajet' => 'required|in:vip,classique',
         ]);
 
@@ -551,6 +573,7 @@ class AgenceController extends Controller
             'ville_depart' => $request->ville_depart,
             'ville_arrive' => $request->ville_arrive,
             'prix' => $request->prix,
+            'distance_km' => $request->distance_km,
             'type_trajet' => $request->type_trajet,
             'gare_id' => $gare->id,
         ]);
@@ -601,7 +624,7 @@ class AgenceController extends Controller
         if (!$gare || $gare->agence->proprietaire_id !== $user->id) {
             return response()->json(['message' => 'Gare invalide ou inaccessible.'], 403);
         }
-
+        $matricule = $this->generateMatricule("CHEF_AGENCE");
         $manager = User::create([
             'nom' => $request->nom,
             'prenom' => $request->prenom,
@@ -612,6 +635,7 @@ class AgenceController extends Controller
             'role_user' => 'CHEF_AGENCE',
             'password' => Hash::make($request->password),
             'gare_id' => $gare->id,
+            'matricule' => $matricule,
             'statut' => 'approuve'
         ]);
 
@@ -867,6 +891,7 @@ class AgenceController extends Controller
         $request->validate([
             'prix' => 'sometimes|required|numeric',
             'type_trajet' => 'sometimes|required|in:vip,classique',
+            'distance_km' => 'sometimes|integer',
         ]);
 
         $trajet = Trajet::find($id);

@@ -66,12 +66,11 @@ class VoyageController extends Controller
             'chauffeur_id' => $request->chauffeur_id,
             'prix' => $request->prix,
             'statut' => $request->statut,
-            'places_disponibles' => $bus->nb_places,
             'gare_id' => $user->gare_id,
             'date_depart' => $request->date_depart,
         ]);
 
-        $chauffeur->update(['statut' => 'innactif']);
+        $chauffeur->update(['statut' => 'inactif']);
         $bus->update(['statut' => 'indisponible']);
 
         return response()->json([
@@ -111,6 +110,7 @@ class VoyageController extends Controller
                     'ville_depart' => $depart?->nom ?? 'Inconnu',
                     'ville_arrivee' => $arrivee?->nom ?? 'Inconnu',
                     'vehicule_immatriculation' => $voyage->bus?->immatriculation,
+                    'code_bus' => $voyage->bus?->code_bus,
                     'statut' => $voyage->statut,
                     'chauffeur' => $voyage->chauffeur,
                 ];

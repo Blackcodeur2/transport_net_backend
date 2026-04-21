@@ -126,9 +126,9 @@ class ReservationController extends Controller
             'reservation_id' => $reservation->id,
             'gare_id' => $request->gare_id,
             'montant' => $reservation->prix,
+            'user_id' => $request->user()->id,
             'statut' => 'validee',
         ]);
-        $voyage->update(['places_disponibles' => $voyage->places_disponibles - 1]);
 
         return response()->json($reservation, 201);
     }
