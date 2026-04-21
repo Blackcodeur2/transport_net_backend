@@ -18,7 +18,8 @@ class Colis extends Model
         'nom_destinataire',
         'prix',
         'poids',
-        'gare_id',
+        'provenance',
+        'destination',
         'voyage_id',
         'visible',
         'statut'
@@ -34,9 +35,13 @@ class Colis extends Model
         return $this->belongsTo(Voyage::class, 'voyage_id');
     }
 
-    public function gares()
+    public function gareProvenance()
     {
-        return  $this->belongsTo(Gare::class, 'gare_id');
+        return $this->belongsTo(Gare::class, 'provenance');
     }
 
+    public function gareDestination()
+    {
+        return $this->belongsTo(Gare::class, 'destination');
+    }
 }

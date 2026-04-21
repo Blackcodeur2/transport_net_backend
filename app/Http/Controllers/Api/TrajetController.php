@@ -31,24 +31,57 @@ class TrajetController extends Controller
             'distance_km',
         ]));
 
-        return response()->json($trajet, 201);
+        return response()->json([
+            'id' => $trajet->id,
+            'ville_depart' => $trajet->ville_depart,
+            'ville_arrive' => $trajet->ville_arrive,
+            'depart' => $trajet->villeDepart?->nom ?? '...',
+            'arrivee' => $trajet->villeArrivee?->nom ?? '...',
+            'prix' => $trajet->prix,
+            'distance_km' => $trajet->distance_km,
+            'type_trajet' => $trajet->type_trajet,
+            'gare_id' => $trajet->gare_id,
+        ], 201);
     }
 
     public function getTrajets()
     {
-        $trajets = Trajet::with(['villeDepart', 'villeArrivee', 'gare'])->get();
+        $trajets = Trajet::with(['villeDepart', 'villeArrivee', 'gare'])->get()->map(function ($trajet) {
+            return [
+                'id' => $trajet->id,
+                'ville_depart' => $trajet->ville_depart,
+                'ville_arrive' => $trajet->ville_arrive,
+                'depart' => $trajet->villeDepart?->nom ?? '...',
+                'arrivee' => $trajet->villeArrivee?->nom ?? '...',
+                'prix' => $trajet->prix,
+                'distance_km' => $trajet->distance_km,
+                'type_trajet' => $trajet->type_trajet,
+                'gare_id' => $trajet->gare_id,
+            ];
+        });
+
         return response()->json($trajets);
     }
 
     public function getTrajetById($id)
     {
         $trajet = Trajet::with(['villeDepart', 'villeArrivee', 'gare'])->find($id);
-        if (!$trajet) {
+        if (! $trajet) {
             return response()->json(['message' => 'Trajet non trouvé'], 404);
         }
-        return response()->json($trajet);
-    }
 
+        return response()->json([
+            'id' => $trajet->id,
+            'ville_depart' => $trajet->ville_depart,
+            'ville_arrive' => $trajet->ville_arrive,
+            'depart' => $trajet->villeDepart?->nom ?? '...',
+            'arrivee' => $trajet->villeArrivee?->nom ?? '...',
+            'prix' => $trajet->prix,
+            'distance_km' => $trajet->distance_km,
+            'type_trajet' => $trajet->type_trajet,
+            'gare_id' => $trajet->gare_id,
+        ]);
+    }
 
     public function getTrajetsPopulaires()
     {
@@ -63,18 +96,19 @@ class TrajetController extends Controller
 
         return response()->json([
             'status' => true,
-            'data' => TrajetResource::collection($trajets)
+            'data' => TrajetResource::collection($trajets),
         ]);
     }
 
     public function deleteTrajet($id)
     {
         $trajet = Trajet::find($id);
-        if (!$trajet) {
+        if (! $trajet) {
             return response()->json(['message' => 'Trajet non trouvé'], 404);
         }
 
         $trajet->delete();
+
         return response()->json(['message' => 'Trajet supprimé avec succès']);
     }
 
@@ -89,7 +123,7 @@ class TrajetController extends Controller
         ]);
 
         $trajet = Trajet::find($id);
-        if (!$trajet) {
+        if (! $trajet) {
             return response()->json(['message' => 'Trajet non trouvé'], 404);
         }
 
@@ -103,6 +137,17 @@ class TrajetController extends Controller
             'duree_heure',
             'is_active',
         ]));
-        return response()->json($trajet);
+
+        return response()->json([
+            'id' => $trajet->id,
+            'ville_depart' => $trajet->ville_depart,
+            'ville_arrive' => $trajet->ville_arrive,
+            'depart' => $trajet->villeDepart?->nom ?? '...',
+            'arrivee' => $trajet->villeArrivee?->nom ?? '...',
+            'prix' => $trajet->prix,
+            'distance_km' => $trajet->distance_km,
+            'type_trajet' => $trajet->type_trajet,
+            'gare_id' => $trajet->gare_id,
+        ]);
     }
 }

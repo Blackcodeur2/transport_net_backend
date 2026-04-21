@@ -2,23 +2,23 @@
 
 namespace App\Http\Controllers\Api;
 
-use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\VoyageRessource;
-use App\Models\Voyage;
-use App\Models\Gare;
+use App\Models\Agence;
 use App\Models\Bus;
+use App\Models\Gare;
+use App\Models\Reservation;
 use App\Models\Trajet;
 use App\Models\User;
-use App\Models\Agence;
-use App\Models\Ville;
-use Illuminate\Http\Request;
-use Illuminate\Support\Str;
+use App\Models\Voyage;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class VoyageController extends Controller
 {
-        public function createVoyage(Request $request)
+    public function createVoyage(Request $request)
     {
         $request->validate([
             'trajet_id' => 'required|exists:trajets,id',
@@ -33,12 +33,12 @@ class VoyageController extends Controller
         ]);
 
         $user = Auth::user();
-        if (!$user || !$user->gare_id) {
+        if (! $user || ! $user->gare_id) {
             return response()->json(['message' => 'Utilisateur introuvable ou non autorisé.'], 403);
         }
 
         $agence = $this->getChefAgency(['gares']);
-        if (!$agence) {
+        if (! $agence) {
             return response()->json(['message' => 'Agence introuvable.'], 404);
         }
 
@@ -47,11 +47,11 @@ class VoyageController extends Controller
         $chauffeur = User::find($request->chauffeur_id);
         $trajet = Trajet::find($request->trajet_id);
 
-        if (!$bus || !in_array($bus->gare_id, $gareIds)) {
+        if (! $bus || ! in_array($bus->gare_id, $gareIds)) {
             return response()->json(['message' => 'Bus non autorisé.'], 403);
         }
 
-        if (!$chauffeur || !in_array($chauffeur->gare_id, $gareIds)) {
+        if (! $chauffeur || ! in_array($chauffeur->gare_id, $gareIds)) {
             return response()->json(['message' => 'Chauffeur non autorisé.'], 403);
         }
 
@@ -86,11 +86,11 @@ class VoyageController extends Controller
         ], 201);
     }
 
-        public function getMyAgenceVoyages(Request $request)
+    public function getMyAgenceVoyages(Request $request)
     {
         $agence = $this->getChefAgency(['gares']);
 
-        if (!$agence) {
+        if (! $agence) {
             return response()->json(['message' => 'Agence non trouvée pour ce chef d agence'], 404);
         }
 
@@ -125,7 +125,9 @@ class VoyageController extends Controller
     public function exportVoyagesPdf(Request $request)
     {
         $agence = $this->getChefAgency(['gares']);
-        if (!$agence) return response()->json(['message' => 'Agence non trouvée'], 404);
+        if (! $agence) {
+            return response()->json(['message' => 'Agence non trouvée'], 404);
+        }
 
         $gareIds = $request->user()->gare_id;
         $gare = Gare::find($gareIds);
@@ -136,14 +138,12 @@ class VoyageController extends Controller
 
         $pdf = Pdf::loadView('pdf.voyages', [
             'agenceName' => $agence->nom,
-            'gareName' => $gare ? $gare->nom . ' - ' . ($gare->ville?->nom ?? '') : 'Inconnue',
-            'voyages' => $voyages
+            'gareName' => $gare ? $gare->nom.' - '.($gare->ville?->nom ?? '') : 'Inconnue',
+            'voyages' => $voyages,
         ]);
 
-        return $pdf->download('voyages_agence_' . date('Y_m_d_H_i') . '.pdf');
+        return $pdf->download('voyages_agence_'.date('Y_m_d_H_i').'.pdf');
     }
-
-
 
     public function getVoyagesForChauffeur(Request $request)
     {
@@ -166,22 +166,38 @@ class VoyageController extends Controller
     public function deleteVoyage($id)
     {
         $voyage = Voyage::find($id);
-        if (!$voyage) {
+        if (! $voyage) {
             return response()->json(['message' => 'Voyage non trouvé'], 404);
         }
 
         $voyage->delete();
+
         return response()->json(['message' => 'Voyage supprimé avec succès']);
     }
 
-        public function getMyAgencesVoyages()
+    public function getMyAgencesVoyages()
     {
         $user = Auth::user();
         $agencyIds = $this->getOwnerAgencyIds($user->id);
         $gareIds = Gare::whereIn('agence_id', $agencyIds)->pluck('id');
         $voyages = Voyage::whereIn('gare_id', $gareIds)
-            ->with(['trajet', 'bus', 'chauffeur'])
-            ->get();
+            ->with(['trajet.villeDepart', 'trajet.villeArrivee', 'bus', 'chauffeur'])
+            ->get()->map(function ($voyage) {
+                return [
+                    'id' => $voyage->id,
+                    'num_voyage' => $voyage->num_voyage,
+                    'date_depart' => $voyage->date_depart,
+                    'heure_depart' => $voyage->date_depart ? date('H:i', strtotime($voyage->date_depart)) : null,
+                    'ville_depart' => $voyage->trajet?->villeDepart?->nom ?? 'Inconnu',
+                    'ville_arrivee' => $voyage->trajet?->villeArrivee?->nom ?? 'Inconnu',
+                    'vehicule_immatriculation' => $voyage->bus?->immatriculation,
+                    'code_bus' => $voyage->bus?->code_bus,
+                    'statut' => $voyage->statut,
+                    'chauffeur' => $voyage->chauffeur,
+                    'places_disponibles' => $voyage->places_disponibles,
+                    'bus' => $voyage->bus,
+                ];
+            });
 
         return response()->json([
             'statut' => true,
@@ -189,11 +205,10 @@ class VoyageController extends Controller
         ]);
     }
 
-        private function getOwnerAgencyIds($id)
+    private function getOwnerAgencyIds($id)
     {
         return Agence::where('proprietaire_id', $id)->pluck('id');
     }
-
 
     public function updateVoyage($id, Request $request)
     {
@@ -209,18 +224,32 @@ class VoyageController extends Controller
         ]);
 
         $voyage = Voyage::find($id);
-        if (!$voyage) {
+        if (! $voyage) {
             return response()->json(['message' => 'Voyage non trouvé'], 404);
         }
 
         $voyage->update($request->all());
-        return response()->json($voyage);
-    }
+        $voyage->load(['trajet.villeDepart', 'trajet.villeArrivee', 'bus', 'chauffeur']);
 
+        return response()->json([
+            'id' => $voyage->id,
+            'num_voyage' => $voyage->num_voyage,
+            'date_depart' => $voyage->date_depart,
+            'heure_depart' => $voyage->date_depart ? date('H:i', strtotime($voyage->date_depart)) : null,
+            'ville_depart' => $voyage->trajet?->villeDepart?->nom ?? 'Inconnu',
+            'ville_arrivee' => $voyage->trajet?->villeArrivee?->nom ?? 'Inconnu',
+            'vehicule_immatriculation' => $voyage->bus?->immatriculation,
+            'code_bus' => $voyage->bus?->code_bus,
+            'statut' => $voyage->statut,
+            'chauffeur' => $voyage->chauffeur,
+            'places_disponibles' => $voyage->places_disponibles,
+            'bus' => $voyage->bus,
+        ]);
+    }
 
     public function getPromoTrips()
     {
-        $promoTrips = Voyage::select('id', 'num_voyage', 'statut', 'trajet_id', 'bus_id','gare_id', 'chauffeur_id', 'date_depart','promo')
+        $promoTrips = Voyage::select('id', 'num_voyage', 'statut', 'trajet_id', 'bus_id', 'gare_id', 'chauffeur_id', 'date_depart', 'promo')
             ->with([
                 'bus:id,immatriculation,nb_places,modele,code_bus',
                 'trajet:id,ville_depart,ville_arrive,prix',
@@ -229,23 +258,23 @@ class VoyageController extends Controller
                 'chauffeur:id,nom,telephone',
                 'gare:id,nom,ville_id,adresse,agence_id',
                 'gare.ville:id,nom',
-                'gare.agence:id,nom'
-            ])->where('promo',false)
+                'gare.agence:id,nom',
+            ])->where('promo', false)
             ->get();
         $v = VoyageRessource::collection($promoTrips);
 
         return response()->json([
             'statut' => true,
-            'data' => $v
+            'data' => $v,
         ]);
     }
 
     public function getOccupiedSeats($id)
     {
-        $occupied = \App\Models\Reservation::where('voyage_id', $id)
+        $occupied = Reservation::where('voyage_id', $id)
             ->where('statut', '!=', 'annule')
             ->pluck('place')
-            ->map(fn($p) => (string)$p);
+            ->map(fn ($p) => (string) $p);
 
         return response()->json([
             'statut' => true,
@@ -255,7 +284,7 @@ class VoyageController extends Controller
 
     public function getScheduledVoyages()
     {
-        $voyages = Voyage::select('id', 'num_voyage', 'statut', 'trajet_id', 'bus_id','gare_id', 'chauffeur_id', 'date_depart','promo')
+        $voyages = Voyage::select('id', 'num_voyage', 'statut', 'trajet_id', 'bus_id', 'gare_id', 'chauffeur_id', 'date_depart', 'promo')
             ->with([
                 'bus:id,immatriculation,nb_places,modele,code_bus',
                 'trajet:id,ville_depart,ville_arrive,prix',
@@ -264,7 +293,7 @@ class VoyageController extends Controller
                 'chauffeur:id,nom,telephone',
                 'gare:id,nom,ville_id,adresse,agence_id',
                 'gare.ville:id,nom',
-                'gare.agence:id,nom'
+                'gare.agence:id,nom',
             ])
             ->where('date_depart', '>=', now()->toDateString())
             ->orderBy('date_depart', 'asc')
@@ -275,7 +304,7 @@ class VoyageController extends Controller
 
         return response()->json([
             'statut' => true,
-            'data' => $v
+            'data' => $v,
         ]);
     }
 
@@ -289,38 +318,38 @@ class VoyageController extends Controller
             'chauffeur:id,nom,telephone',
             'gare:id,nom,ville_id,adresse,agence_id',
             'gare.ville:id,nom',
-            'gare.agence:id,nom'
+            'gare.agence:id,nom',
         ])->find($id);
 
-        if (!$voyage) {
+        if (! $voyage) {
             return response()->json(['message' => 'Voyage non trouvé'], 404);
         }
 
         return response()->json([
             'statut' => true,
-            'data' => new VoyageRessource($voyage)
+            'data' => new VoyageRessource($voyage),
         ]);
     }
 
-        private function getChefAgency(array $with = [])
+    private function getChefAgency(array $with = [])
     {
         $user = Auth::user();
-        if (!$user || !$user->gare_id) {
+        if (! $user || ! $user->gare_id) {
             return null;
         }
 
         $gare = Gare::find($user->gare_id);
-        if (!$gare || !$gare->agence_id) {
+        if (! $gare || ! $gare->agence_id) {
             return null;
         }
 
         return Agence::with($with)->find($gare->agence_id);
     }
 
-     protected function generateVoyageNumber(): string
+    protected function generateVoyageNumber(): string
     {
         do {
-            $number = 'VOY-' . strtoupper(Str::random(8));
+            $number = 'VOY-'.strtoupper(Str::random(8));
         } while (Voyage::where('num_voyage', $number)->exists());
 
         return $number;

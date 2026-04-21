@@ -262,9 +262,6 @@ class ReservationController extends Controller
             'statut' => 'validee',
         ]);
 
-        // Decrement available seats
-        $voyage->update(['places_disponibles' => max(0, $voyage->places_disponibles - 1)]);
-
         return response()->json([
             'statut' => true,
             'data' => $reservation,
@@ -292,13 +289,7 @@ class ReservationController extends Controller
 
         $reservation->update(['statut' => 'annule']);
 
-        // Libérer la place sur le voyage
-        if ($reservation->voyage_id) {
-            $voyage = Voyage::find($reservation->voyage_id);
-            if ($voyage) {
-                $voyage->increment('places_disponibles');
-            }
-        }
+       
 
         return response()->json([
             'statut' => true,
@@ -448,8 +439,6 @@ class ReservationController extends Controller
             'statut' => 'validee',
         ]);
 
-        $voyage->update(['places_disponibles' => max(0, $voyage->places_disponibles - 1)]);
-
         return response()->json([
             'statut' => true,
             'data' => $reservation,
@@ -486,9 +475,6 @@ class ReservationController extends Controller
         // Libérer la place sur le voyage
         if ($reservation->voyage_id) {
             $voyage = Voyage::find($reservation->voyage_id);
-            if ($voyage) {
-                $voyage->increment('places_disponibles');
-            }
         }
 
         return response()->json([
@@ -595,9 +581,6 @@ class ReservationController extends Controller
         // Libérer la place sur le voyage
         if ($reservation->voyage_id) {
             $voyage = Voyage::find($reservation->voyage_id);
-            if ($voyage) {
-                $voyage->increment('places_disponibles');
-            }
         }
 
         return response()->json([
@@ -722,7 +705,6 @@ class ReservationController extends Controller
             if ($voyage) {
                 // S'assurer de charger le bus pour les calculs de capacité si besoin, 
                 // mais ici on incrémente juste le compteur global.
-                $voyage->increment('places_disponibles');
             }
         }
 
@@ -774,9 +756,6 @@ class ReservationController extends Controller
             'prix' => $voyage->prix,
             'statut' => 'en attente',
         ]);
-
-        // 4. Mise à jour des places disponibles
-        $voyage->update(['places_disponibles' => max(0, $voyage->places_disponibles - 1)]);
 
         return response()->json([
             'statut' => true,

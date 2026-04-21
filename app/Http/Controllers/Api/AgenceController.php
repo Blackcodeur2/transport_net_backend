@@ -1,21 +1,21 @@
 <?php
 
 namespace App\Http\Controllers\Api;
+
 use App\Http\Controllers\Controller;
 use App\Models\Agence;
 use App\Models\Bus;
 use App\Models\Gare;
 use App\Models\KWCDocument;
+use App\Models\Reservation;
 use App\Models\Trajet;
 use App\Models\User;
-use App\Models\Reservation;
 use App\Models\Voyage;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Str;
-
 
 class AgenceController extends Controller
 {
@@ -49,19 +49,21 @@ class AgenceController extends Controller
 
     public function getAllAgences()
     {
-        $agences = Agence::with('gares','owner')->get();
+        $agences = Agence::with('gares', 'owner')->get();
+
         return response()->json($agences);
     }
 
     public function getAgenceById($id)
     {
-        $agence = Agence::with('gares','owner')->find($id);
-        if (!$agence) {
+        $agence = Agence::with('gares', 'owner')->find($id);
+        if (! $agence) {
             return response()->json(['message' => 'Agence non trouvée'], 404);
         }
+
         return response()->json([
             'statut' => true,
-            'data' => $agence
+            'data' => $agence,
         ]);
     }
 
@@ -73,22 +75,24 @@ class AgenceController extends Controller
             'adresse' => 'sometimes|required|string|max:255',
         ]);
         $agence = Agence::find($id);
-        if (!$agence) {
+        if (! $agence) {
             return response()->json(['message' => 'Agence non trouvée'], 404);
         }
 
         $agence->update($request->all());
+
         return response()->json(['message' => 'Agence Modifiee avec succes']);
     }
 
     public function deleteAgence($id)
     {
         $agence = Agence::find($id);
-        if (!$agence) {
+        if (! $agence) {
             return response()->json(['message' => 'Agence non trouvée'], 404);
         }
 
         $agence->delete();
+
         return response()->json(['message' => 'Agence supprimée avec succès']);
     }
 
@@ -105,17 +109,17 @@ class AgenceController extends Controller
         $data['proprietaire_id'] = $user->id;
 
         $agence = Agence::create($data);
+
         return response()->json($agence, 201);
     }
-
-
 
     public function getMyAgences($id)
     {
         $agences = Agence::with('gares')->where('proprietaire_id', '=', $id)->get();
+
         return response()->json([
             'statut' => true,
-            'data' => $agences
+            'data' => $agences,
         ]);
     }
 
@@ -129,12 +133,12 @@ class AgenceController extends Controller
     private function getChefAgency(array $with = [])
     {
         $user = Auth::user();
-        if (!$user || !$user->gare_id) {
+        if (! $user || ! $user->gare_id) {
             return null;
         }
 
         $gare = Gare::find($user->gare_id);
-        if (!$gare || !$gare->agence_id) {
+        if (! $gare || ! $gare->agence_id) {
             return null;
         }
 
@@ -144,9 +148,10 @@ class AgenceController extends Controller
     private function isGareInChefAgency(int $gareId): bool
     {
         $agence = $this->getChefAgency(['gares']);
-        if (!$agence) {
+        if (! $agence) {
             return false;
         }
+
         return $agence->gares->pluck('id')->contains($gareId);
     }
 
@@ -160,7 +165,7 @@ class AgenceController extends Controller
             'gares.voyages',
         ]);
 
-        if (!$agence) {
+        if (! $agence) {
             return response()->json(['message' => 'Agence non trouvée pour ce chef d agence'], 404);
         }
 
@@ -183,7 +188,7 @@ class AgenceController extends Controller
     {
         $agence = $this->getChefAgency(['gares']);
 
-        if (!$agence) {
+        if (! $agence) {
             return response()->json(['message' => 'Agence non trouvée pour ce chef d agence'], 404);
         }
 
@@ -197,11 +202,11 @@ class AgenceController extends Controller
     {
         $agence = $this->getChefAgency(['gares']);
 
-        if (!$agence) {
+        if (! $agence) {
             return response()->json(['message' => 'Agence non trouvée pour ce chef d agence'], 404);
         }
 
-        //$gareIds = $agence->gares->pluck('id');
+        // $gareIds = $agence->gares->pluck('id');
         $gareIds = $request->user()->gare_id;
         $buses = Bus::where('gare_id', $gareIds)->get()->map(function ($bus) {
             return [
@@ -225,7 +230,7 @@ class AgenceController extends Controller
     public function getMyAgenceBusesDispo(Request $request)
     {
         $agence = $this->getChefAgency(['gares']);
-        if (!$agence) {
+        if (! $agence) {
             return response()->json(['message' => 'Agence non trouvée pour ce chef d agence'], 404);
         }
 
@@ -253,7 +258,7 @@ class AgenceController extends Controller
     {
         $agence = $this->getChefAgency(['gares']);
 
-        if (!$agence) {
+        if (! $agence) {
             return response()->json(['message' => 'Agence non trouvée pour ce chef d agence'], 404);
         }
 
@@ -280,12 +285,11 @@ class AgenceController extends Controller
         ]);
     }
 
-
     public function getMyAgenceUsers(Request $request)
     {
         $agence = $this->getChefAgency(['gares']);
 
-        if (!$agence) {
+        if (! $agence) {
             return response()->json(['message' => 'Agence non trouvée pour ce chef d agence'], 404);
         }
 
@@ -302,28 +306,30 @@ class AgenceController extends Controller
     {
         $agence = $this->getChefAgency(['gares']);
 
-        if (!$agence) {
+        if (! $agence) {
             return response()->json(['message' => 'Agence non trouvée pour ce chef d agence'], 404);
         }
 
         $gareIds = $request->user()->gare_id;
         $gare = Gare::find($gareIds);
-        
+
         $users = User::where('gare_id', $gareIds)->get();
 
         $pdf = Pdf::loadView('pdf.personnel', [
             'agenceName' => $agence->nom,
-            'gareName' => $gare ? $gare->nom . ' - ' . ($gare->ville?->nom ?? '') : 'Inconnue',
-            'personnel' => $users
+            'gareName' => $gare ? $gare->nom.' - '.($gare->ville?->nom ?? '') : 'Inconnue',
+            'personnel' => $users,
         ]);
 
-        return $pdf->download('personnel_agence_' . date('Y_m_d_H_i') . '.pdf');
+        return $pdf->download('personnel_agence_'.date('Y_m_d_H_i').'.pdf');
     }
 
     public function exportBusesPdf(Request $request)
     {
         $agence = $this->getChefAgency(['gares']);
-        if (!$agence) return response()->json(['message' => 'Agence non trouvée'], 404);
+        if (! $agence) {
+            return response()->json(['message' => 'Agence non trouvée'], 404);
+        }
 
         $gareIds = $request->user()->gare_id;
         $gare = Gare::find($gareIds);
@@ -332,17 +338,19 @@ class AgenceController extends Controller
 
         $pdf = Pdf::loadView('pdf.buses', [
             'agenceName' => $agence->nom,
-            'gareName' => $gare ? $gare->nom . ' - ' . ($gare->ville?->nom ?? '') : 'Inconnue',
-            'buses' => $buses
+            'gareName' => $gare ? $gare->nom.' - '.($gare->ville?->nom ?? '') : 'Inconnue',
+            'buses' => $buses,
         ]);
 
-        return $pdf->download('buses_agence_' . date('Y_m_d_H_i') . '.pdf');
+        return $pdf->download('buses_agence_'.date('Y_m_d_H_i').'.pdf');
     }
 
     public function exportTrajetsPdf(Request $request)
     {
         $agence = $this->getChefAgency(['gares']);
-        if (!$agence) return response()->json(['message' => 'Agence non trouvée'], 404);
+        if (! $agence) {
+            return response()->json(['message' => 'Agence non trouvée'], 404);
+        }
 
         $gareIds = $request->user()->gare_id;
         $gare = Gare::find($gareIds);
@@ -351,30 +359,30 @@ class AgenceController extends Controller
 
         $pdf = Pdf::loadView('pdf.trajets', [
             'agenceName' => $agence->nom,
-            'gareName' => $gare ? $gare->nom . ' - ' . ($gare->ville?->nom ?? '') : 'Inconnue',
-            'trajets' => $trajets
+            'gareName' => $gare ? $gare->nom.' - '.($gare->ville?->nom ?? '') : 'Inconnue',
+            'trajets' => $trajets,
         ]);
 
-        return $pdf->download('trajets_agence_' . date('Y_m_d_H_i') . '.pdf');
+        return $pdf->download('trajets_agence_'.date('Y_m_d_H_i').'.pdf');
     }
 
     public function getChefAgenceDashboardStats(Request $request)
     {
         $agence = $this->getChefAgency(['gares']);
-        if (!$agence) {
+        if (! $agence) {
             return response()->json(['message' => 'Agence non trouvée pour ce chef d agence'], 404);
         }
 
-        //$gareIds = $agence->gares->pluck('id');
+        // $gareIds = $agence->gares->pluck('id');
         $gareIds = $request->user()->gare_id;
 
         // Basic Stats
         $stats = [
-            'total_buses' => Bus::where('gare_id','=', $gareIds)->count(),
-            'total_staff' => User::where('gare_id','=', $gareIds)
-            ->whereIn('role_user', ['AGENT','CHAUFFEUR'])
-            ->count(),
-            'total_trajets' => Trajet::where('gare_id','=', $gareIds)->count(),
+            'total_buses' => Bus::where('gare_id', '=', $gareIds)->count(),
+            'total_staff' => User::where('gare_id', '=', $gareIds)
+                ->whereIn('role_user', ['AGENT', 'CHAUFFEUR'])
+                ->count(),
+            'total_trajets' => Trajet::where('gare_id', '=', $gareIds)->count(),
             'revenue_today' => (float) Reservation::where('gare_id', $gareIds)
                 ->whereDate('created_at', now()->toDateString())
                 ->where('statut', 'validee')
@@ -386,7 +394,7 @@ class AgenceController extends Controller
         ];
 
         // Fleet Status
-        $fleetStatusRaw = Bus::where('gare_id','=', $gareIds)
+        $fleetStatusRaw = Bus::where('gare_id', '=', $gareIds)
             ->selectRaw('statut, count(*) as count')
             ->groupBy('statut')
             ->get();
@@ -402,7 +410,7 @@ class AgenceController extends Controller
                     ->whereDate('created_at', $dayKey)
                     ->where('statut', 'validee')
                     ->sum('prix'),
-                'date' => $dayKey
+                'date' => $dayKey,
             ];
         }
 
@@ -415,8 +423,8 @@ class AgenceController extends Controller
             ->map(function ($res) {
                 return [
                     'id' => $res->id,
-                    'clientName' => $res->user ? $res->user->nom . ' ' . $res->user->prenom : 'Anonyme',
-                    'route' => ($res->voyage?->trajet?->villeDepart?->nom ?? 'Inconnu') . ' → ' . ($res->voyage?->trajet?->villeArrivee?->nom ?? 'Inconnu'),
+                    'clientName' => $res->user ? $res->user->nom.' '.$res->user->prenom : 'Anonyme',
+                    'route' => ($res->voyage?->trajet?->villeDepart?->nom ?? 'Inconnu').' → '.($res->voyage?->trajet?->villeArrivee?->nom ?? 'Inconnu'),
                     'amount' => (float) $res->prix,
                     'date' => $res->created_at->format('d/m/Y'),
                 ];
@@ -424,7 +432,7 @@ class AgenceController extends Controller
 
         // Live Trips
         $liveTrips = Voyage::with(['trajet.villeDepart', 'trajet.villeArrivee', 'bus', 'chauffeur'])
-            ->where('gare_id','=', $gareIds)
+            ->where('gare_id', '=', $gareIds)
             ->where('date_depart', '>=', now()->toDateString())
             ->orderBy('date_depart')
             ->limit(5)
@@ -450,8 +458,8 @@ class AgenceController extends Controller
                 'fleet_status' => $fleetStatusRaw,
                 'revenue_history' => $revenueHistory,
                 'recent_reservations' => $recentReservations,
-                'live_trips' => $liveTrips
-            ]
+                'live_trips' => $liveTrips,
+            ],
         ]);
     }
 
@@ -469,12 +477,12 @@ class AgenceController extends Controller
         ]);
 
         $user = Auth::user();
-        if (!$user || !$user->gare_id) {
+        if (! $user || ! $user->gare_id) {
             return response()->json(['message' => 'Utilisateur introuvable ou non autorisé.'], 403);
         }
 
         $gare = Gare::find($user->gare_id);
-        if (!$gare || !$gare->agence_id) {
+        if (! $gare || ! $gare->agence_id) {
             return response()->json(['message' => 'Agence introuvable.'], 404);
         }
 
@@ -502,16 +510,16 @@ class AgenceController extends Controller
 
     protected function generateMatricule($role)
     {
-        $i = "";
+        $i = '';
         do {
-            if($role == "AGENT"){
-                $i = "AG";
-            }elseif($role == "CHAUFFEUR"){
-                $i = "CH";
-            }else{
-                $i = "CHF";
+            if ($role == 'AGENT') {
+                $i = 'AG';
+            } elseif ($role == 'CHAUFFEUR') {
+                $i = 'CH';
+            } else {
+                $i = 'CHF';
             }
-            $matricule = $i . strtoupper(Str::random(8)). date('m-d') ;
+            $matricule = $i.strtoupper(Str::random(8)).date('m-d');
         } while (User::where('matricule', $matricule)->exists());
 
         return $matricule;
@@ -529,7 +537,7 @@ class AgenceController extends Controller
             'statut' => 'required|in:disponible,en voyage,en maintenance,indisponible',
         ]);
 
-        if (!$this->isGareInChefAgency($request->gare_id)) {
+        if (! $this->isGareInChefAgency($request->gare_id)) {
             return response()->json(['message' => 'Gare invalide ou non autorisée.'], 403);
         }
 
@@ -560,12 +568,12 @@ class AgenceController extends Controller
         ]);
 
         $user = Auth::user();
-        if (!$user || !$user->gare_id) {
+        if (! $user || ! $user->gare_id) {
             return response()->json(['message' => 'Utilisateur introuvable ou non autorisé.'], 403);
         }
 
         $gare = Gare::find($user->gare_id);
-        if (!$gare || !$gare->agence_id) {
+        if (! $gare || ! $gare->agence_id) {
             return response()->json(['message' => 'Agence introuvable.'], 404);
         }
 
@@ -583,12 +591,14 @@ class AgenceController extends Controller
             'depart' => $trajet->villeDepart?->nom ?? 'Inconnu',
             'arrivee' => $trajet->villeArrivee?->nom ?? 'Inconnu',
             'prix' => $trajet->prix,
+            'distance_km' => $trajet->distance_km,
             'type_trajet' => $trajet->type_trajet,
             'ville_depart' => $trajet->ville_depart,
             'ville_arrive' => $trajet->ville_arrive,
             'gare_id' => $trajet->gare_id,
         ], 201);
     }
+
     public function getMyGerants()
     {
         $user = Auth::user();
@@ -621,10 +631,10 @@ class AgenceController extends Controller
         $user = Auth::user();
         $gare = Gare::find($request->gare_id);
 
-        if (!$gare || $gare->agence->proprietaire_id !== $user->id) {
+        if (! $gare || $gare->agence->proprietaire_id !== $user->id) {
             return response()->json(['message' => 'Gare invalide ou inaccessible.'], 403);
         }
-        $matricule = $this->generateMatricule("CHEF_AGENCE");
+        $matricule = $this->generateMatricule('CHEF_AGENCE');
         $manager = User::create([
             'nom' => $request->nom,
             'prenom' => $request->prenom,
@@ -636,7 +646,7 @@ class AgenceController extends Controller
             'password' => Hash::make($request->password),
             'gare_id' => $gare->id,
             'matricule' => $matricule,
-            'statut' => 'approuve'
+            'statut' => 'approuve',
         ]);
 
         KWCDocument::factory()->count(1)->create([
@@ -657,7 +667,7 @@ class AgenceController extends Controller
             ->whereIn('gare_id', $gareIds)
             ->first();
 
-        if (!$manager) {
+        if (! $manager) {
             return response()->json(['message' => 'Gérant introuvable ou non autorisé.'], 404);
         }
 
@@ -721,7 +731,19 @@ class AgenceController extends Controller
         $user = Auth::user();
         $agencyIds = $this->getOwnerAgencyIds($user->id);
         $gareIds = Gare::whereIn('agence_id', $agencyIds)->pluck('id');
-        $trajets = Trajet::where('gare_id', $gareIds)->get();
+        $trajets = Trajet::with(['villeDepart', 'villeArrivee'])->whereIn('gare_id', $gareIds)->get()->map(function ($trajet) {
+            return [
+                'id' => $trajet->id,
+                'depart' => $trajet->villeDepart?->nom ?? 'Inconnu',
+                'arrivee' => $trajet->villeArrivee?->nom ?? 'Inconnu',
+                'prix' => $trajet->prix,
+                'distance_km' => $trajet->distance_km,
+                'type_trajet' => $trajet->type_trajet,
+                'ville_depart' => $trajet->ville_depart,
+                'ville_arrive' => $trajet->ville_arrive,
+                'gare_id' => $trajet->gare_id,
+            ];
+        });
 
         return response()->json([
             'statut' => true,
@@ -816,19 +838,21 @@ class AgenceController extends Controller
     public function fakeUser()
     {
         $agences = Agence::where('statut', 'en attente')
-            ->get(['nom','email','telephone','adresse','statut']);
+            ->get(['nom', 'email', 'telephone', 'adresse', 'statut']);
+
         return response()->json([
             'statut' => true,
-            'data' => $agences
+            'data' => $agences,
         ]);
     }
 
     public function getAgencesPartenaires()
     {
         $agences = Agence::with('gares')->get();
+
         return response()->json([
             'statut' => true,
-            'data' => $agences
+            'data' => $agences,
         ]);
     }
 
@@ -837,16 +861,16 @@ class AgenceController extends Controller
         $request->validate([
             'nom' => 'sometimes|required|string|max:255',
             'prenom' => 'sometimes|required|string|max:255',
-            'email' => 'sometimes|required|email|unique:users,email,' . $id,
-            'telephone' => 'sometimes|required|string|unique:users,telephone,' . $id,
-            'num_cni' => 'sometimes|required|string|unique:users,num_cni,' . $id,
+            'email' => 'sometimes|required|email|unique:users,email,'.$id,
+            'telephone' => 'sometimes|required|string|unique:users,telephone,'.$id,
+            'num_cni' => 'sometimes|required|string|unique:users,num_cni,'.$id,
             'date_naissance' => 'sometimes|required|date',
             'password' => 'sometimes|nullable|string|min:8',
             'role_user' => 'sometimes|required|in:AGENT,CHAUFFEUR',
         ]);
 
         $staff = User::find($id);
-        if (!$staff) {
+        if (! $staff) {
             return response()->json(['message' => 'Personnel non trouvé'], 404);
         }
 
@@ -856,14 +880,15 @@ class AgenceController extends Controller
         }
 
         $staff->update($data);
+
         return response()->json($staff);
     }
 
     public function updateBus($id, Request $request)
     {
         $request->validate([
-            'immatriculation' => 'sometimes|required|string|unique:buses,immatriculation,' . $id,
-            'code_bus' => 'sometimes|required|string|unique:buses,code_bus,' . $id,
+            'immatriculation' => 'sometimes|required|string|unique:buses,immatriculation,'.$id,
+            'code_bus' => 'sometimes|required|string|unique:buses,code_bus,'.$id,
             'nb_places' => 'sometimes|required|integer',
             'type_bus' => 'sometimes|required|in:coaster,gros porteur',
             'classe_bus' => 'sometimes|required|in:classique,vip',
@@ -871,15 +896,20 @@ class AgenceController extends Controller
         ]);
 
         $bus = Bus::find($id);
-        if (!$bus) {
+        if (! $bus) {
             return response()->json(['message' => 'Bus non trouvé'], 404);
         }
 
         $data = $request->all();
-        if ($request->has('type_bus')) $data['modele'] = $request->type_bus;
-        if ($request->has('classe_bus')) $data['type'] = $request->classe_bus;
+        if ($request->has('type_bus')) {
+            $data['modele'] = $request->type_bus;
+        }
+        if ($request->has('classe_bus')) {
+            $data['type'] = $request->classe_bus;
+        }
 
         $bus->update($data);
+
         return response()->json(array_merge($bus->toArray(), [
             'classe_bus' => $bus->type,
             'type_bus' => $bus->modele,
@@ -895,14 +925,12 @@ class AgenceController extends Controller
         ]);
 
         $trajet = Trajet::find($id);
-        if (!$trajet) {
+        if (! $trajet) {
             return response()->json(['message' => 'Trajet non trouvé'], 404);
         }
 
         $trajet->update($request->all());
+
         return response()->json($trajet);
     }
-
-
-
 }
