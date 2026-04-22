@@ -1,20 +1,19 @@
 <?php
 
 use App\Http\Controllers\Api\AgenceController;
-use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\TrajetController;
 use App\Http\Controllers\Api\AgentController;
-use App\Http\Controllers\Api\VoyageController;
-use App\Http\Controllers\Api\ColisController;
-use App\Http\Controllers\Api\KWCDocumentController;
-use App\Http\Controllers\Api\GareController;
-use App\Http\Controllers\Api\ReservationController;
 use App\Http\Controllers\Api\AssistantIaController;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Http\Request;
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ColisController;
+use App\Http\Controllers\Api\GareController;
+use App\Http\Controllers\Api\KWCDocumentController;
 use App\Http\Controllers\Api\PaiementController;
+use App\Http\Controllers\Api\ReservationController;
+use App\Http\Controllers\Api\TrajetController;
 use App\Http\Controllers\Api\VilleController;
-
+use App\Http\Controllers\Api\VoyageController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
@@ -28,19 +27,22 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::middleware('auth:sanctum')->group(function() {
-    Route::prefix('client')->group(function(){
+Route::middleware('auth:sanctum')->group(function () {
+    Route::prefix('client')->group(function () {
         Route::post('/upload-cni', [KWCDocumentController::class, 'saveCNI']);
         Route::post('/kyc/submit', [KWCDocumentController::class, 'saveProprietaireKWC']);
+        Route::post('/kyc/entreprise/submit', [KWCDocumentController::class, 'saveEntrepriseKWC']);
     });
 
-    Route::prefix('proprietaire')->group(function(){
+    Route::prefix('proprietaire')->group(function () {
         Route::post('/upload-cni', [KWCDocumentController::class, 'saveCNI']);
         Route::post('/kyc/submit', [KWCDocumentController::class, 'saveProprietaireKWC']);
+        Route::post('/kyc/entreprise/submit', [KWCDocumentController::class, 'saveEntrepriseKWC']);
+        Route::get('/kyc/status', [KWCDocumentController::class, 'getKycStatus']);
     });
 });
 // Si l'utilisateur est authentifie et verifie  , 'verified'
-Route::middleware(['auth:sanctum','verified'])->group(function () {
+Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     // Deconnexion
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/change-password', [AuthController::class, 'changePassword']);
@@ -48,8 +50,7 @@ Route::middleware(['auth:sanctum','verified'])->group(function () {
     // Assistant IA (chatbot)
     Route::post('/chat', [AssistantIaController::class, 'chat']);
 
-
-    // Routes pour le client 
+    // Routes pour le client
     Route::middleware('role:CLIENT')->prefix('client')->group(function () {
         Route::get('/promo-trips', [VoyageController::class, 'getPromoTrips']);
         Route::get('/my-colis', [ColisController::class, 'getMyColis']);
@@ -62,15 +63,15 @@ Route::middleware(['auth:sanctum','verified'])->group(function () {
         Route::get('/reservations', [ReservationController::class, 'getMyReservations']);
         Route::get('/reservations/{id}', [ReservationController::class, 'getReservationById']);
         Route::get('/reservations/{id}/ticket', [ReservationController::class, 'generateTicketForClient']);
-        
+
         // CamPay Payment Routes
         Route::post('/payments/initiate', [PaiementController::class, 'initiatePayment']);
         Route::get('/payments/status/{reference}', [PaiementController::class, 'checkStatus']);
-        
+
         Route::post('/reservations', [ReservationController::class, 'createReservation']);
         Route::post('/reserve-seat', [ReservationController::class, 'storeClientReservation']);
         Route::delete('/reservations/{id}', [ReservationController::class, 'cancelReservation']);
-        //Route::post('/upload-cni', [KWCDocumentController::class, 'saveCNI']);
+        // Route::post('/upload-cni', [KWCDocumentController::class, 'saveCNI']);
 
     });
 
@@ -95,7 +96,7 @@ Route::middleware(['auth:sanctum','verified'])->group(function () {
         Route::patch('/colis/{id}/status', [ColisController::class, 'updateColisStatus']);
     });
 
-     // =================== ROUTES POUR LE CHEF CHAUFFEUR ========================
+    // =================== ROUTES POUR LE CHEF CHAUFFEUR ========================
 
     Route::middleware('role:CHAUFFEUR')->prefix('chauffeur')->group(function () {
         Route::get('/voyages', [VoyageController::class, 'getVoyagesForChauffeur']);
@@ -137,7 +138,7 @@ Route::middleware(['auth:sanctum','verified'])->group(function () {
         Route::get('/reservations/{id}/ticket', [AgentController::class, 'generateTicket']);
         Route::post('/reservations', [ReservationController::class, 'createChefAgenceReservation']);
         Route::delete('/reservations/{id}', [ReservationController::class, 'cancelChefAgenceReservation']);
-        
+
         Route::get('/colis', [ColisController::class, 'getChefAgenceColis']);
         Route::post('/colis', [ColisController::class, 'createChefAgenceColis']);
         Route::patch('/colis/{id}/status', [ColisController::class, 'updateColisStatus']);
@@ -167,8 +168,8 @@ Route::middleware(['auth:sanctum','verified'])->group(function () {
     });
 
     Route::middleware('role:ADMIN')->prefix('admin')->group(function () {
-        Route::get('/kyc', [KWCDocumentController::class, 'afficherDocumentEnAttente']);
-        Route::put('/kyc/{id}/approve',[KWCDocumentController::class, 'validateDocument']);
+        Route::get('/kyc', [KWCDocumentController::class, 'afficherTousLesDocuments']);
+        Route::put('/kyc/{id}/approve', [KWCDocumentController::class, 'validateDocument']);
         Route::get('/agences', [AgenceController::class, 'getAllAgences']);
         Route::get('/users', [AgenceController::class, 'getAllUsers']);
         Route::get('/voyages', [VoyageController::class, 'getAllVoyages']);
@@ -180,10 +181,7 @@ Route::middleware(['auth:sanctum','verified'])->group(function () {
         Route::post('/villes', [VilleController::class, 'store']);
         Route::put('/villes/{ville}', [VilleController::class, 'update']);
         Route::delete('/villes/{ville}', [VilleController::class, 'destroy']);
-    }); 
+    });
 
     Route::get('/villes', [VilleController::class, 'index']);
 });
-
-
-

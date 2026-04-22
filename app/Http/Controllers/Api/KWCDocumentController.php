@@ -10,13 +10,12 @@ use Illuminate\Http\Request;
 
 class KWCDocumentController extends Controller
 {
-
     public function saveCNI(Request $request)
     {
         $request->validate([
             'type' => 'required|string',
             'fichier' => 'required|file|mimes:pdf,jpeg,jpg,png|max:10240',
-            'commentaire' => 'nullable'
+            'commentaire' => 'nullable',
         ]);
 
         $image = $request->file('fichier');
@@ -27,7 +26,7 @@ class KWCDocumentController extends Controller
             'user_id' => $user_id,
             'type' => 'cni',
             'chemin_fichier' => $chemin,
-            'commentaire' => $request->commentaire ?? ''
+            'commentaire' => $request->commentaire ?? '',
         ]);
 
         return response()->json([
@@ -39,41 +38,41 @@ class KWCDocumentController extends Controller
     public function saveProprietaireKWC(Request $request)
     {
         $request->validate([
-            'document_type'   => 'required|string|in:CNI,PASSPORT,RESIDENCE_PERMIT',
+            'document_type' => 'required|string|in:CNI,PASSPORT,RESIDENCE_PERMIT',
             'document_number' => 'required|string|max:100',
-            'expiry_date'     => 'required|date|after:today',
-            'file_front'      => 'required|file|mimes:pdf,jpeg,jpg,png,webp|max:10240',
-            'file_back'       => 'required|file|mimes:pdf,jpeg,jpg,png,webp|max:10240',
-            'file_selfie'     => 'required|file|mimes:jpeg,jpg,png,webp|max:10240',
+            'expiry_date' => 'required|date|after:today',
+            'file_front' => 'required|file|mimes:pdf,jpeg,jpg,png,webp|max:10240',
+            'file_back' => 'required|file|mimes:pdf,jpeg,jpg,png,webp|max:10240',
+            'file_selfie' => 'required|file|mimes:jpeg,jpg,png,webp|max:10240',
         ]);
 
         $userId = $request->user()->id;
 
         // Stocker les 3 fichiers
-        $cheminFront  = $request->file('file_front')->store('kwc/proprietaires', 'public');
-        $cheminBack   = $request->file('file_back')->store('kwc/proprietaires', 'public');
+        $cheminFront = $request->file('file_front')->store('kwc/proprietaires', 'public');
+        $cheminBack = $request->file('file_back')->store('kwc/proprietaires', 'public');
         $cheminSelfie = $request->file('file_selfie')->store('kwc/proprietaires', 'public');
 
         // Enregistrer chaque document séparément
         $docFront = KWCDocument::create([
-            'user_id'        => $userId,
-            'type'           => strtolower($request->document_type) . '_recto',
+            'user_id' => $userId,
+            'type' => strtolower($request->document_type).'_recto',
             'chemin_fichier' => $cheminFront,
-            'commentaire'    => 'Numéro: ' . $request->document_number . ' | Expiration: ' . $request->expiry_date,
+            'commentaire' => 'Numéro: '.$request->document_number.' | Expiration: '.$request->expiry_date,
         ]);
 
         $docBack = KWCDocument::create([
-            'user_id'        => $userId,
-            'type'           => strtolower($request->document_type) . '_verso',
+            'user_id' => $userId,
+            'type' => strtolower($request->document_type).'_verso',
             'chemin_fichier' => $cheminBack,
-            'commentaire'    => '',
+            'commentaire' => '',
         ]);
 
         $docSelfie = KWCDocument::create([
-            'user_id'        => $userId,
-            'type'           => 'selfie',
+            'user_id' => $userId,
+            'type' => 'selfie',
             'chemin_fichier' => $cheminSelfie,
-            'commentaire'    => '',
+            'commentaire' => '',
         ]);
 
         // Mettre à jour le statut KWC de l'utilisateur (PENDING)
@@ -82,20 +81,69 @@ class KWCDocumentController extends Controller
         ]);
 
         return response()->json([
-            'message'   => 'Dossier KWC soumis avec succès. Vérification en cours.',
+            'message' => 'Dossier KWC soumis avec succès. Vérification en cours.',
             'documents' => [
-                'recto'  => $docFront,
-                'verso'  => $docBack,
+                'recto' => $docFront,
+                'verso' => $docBack,
                 'selfie' => $docSelfie,
             ],
         ], 201);
     }
 
+    public function saveEntrepriseKWC(Request $request)
+    {
+        $request->validate([
+            'rccm' => 'required|file|mimes:pdf,jpeg,jpg,png,webp|max:10240',
+            'dfe' => 'required|file|mimes:pdf,jpeg,jpg,png,webp|max:10240',
+            'statuts' => 'required|file|mimes:pdf,jpeg,jpg,png,webp|max:10240',
+            'pv_nomination' => 'nullable|file|mimes:pdf,jpeg,jpg,png,webp|max:10240',
+            'rib' => 'required|file|mimes:pdf,jpeg,jpg,png,webp|max:10240',
+            'gerant_id_front' => 'required|file|mimes:pdf,jpeg,jpg,png,webp|max:10240',
+            'gerant_id_back' => 'required|file|mimes:pdf,jpeg,jpg,png,webp|max:10240',
+            'gerant_selfie' => 'required|file|mimes:jpeg,jpg,png,webp|max:10240',
+        ]);
 
-    public function afficherDocumentEnAttente()
+        $userId = $request->user()->id;
+        $docsCreated = [];
+
+        $fileMappings = [
+            'rccm' => 'rccm',
+            'dfe' => 'dfe',
+            'statuts' => 'statuts',
+            'pv_nomination' => 'pv_nomination',
+            'rib' => 'rib',
+            'gerant_id_front' => 'gerant_id_recto',
+            'gerant_id_back' => 'gerant_id_verso',
+            'gerant_selfie' => 'gerant_selfie',
+        ];
+
+        foreach ($fileMappings as $requestKey => $docType) {
+            if ($request->hasFile($requestKey)) {
+                $path = $request->file($requestKey)->store('kwc/entreprise', 'public');
+                $docsCreated[$requestKey] = KWCDocument::create([
+                    'user_id' => $userId,
+                    'type' => $docType,
+                    'chemin_fichier' => $path,
+                    'commentaire' => '',
+                ]);
+            }
+        }
+
+        // Mettre à jour le statut KWC de l'utilisateur (PENDING)
+        $request->user()->update([
+            'kyc_status' => 'PENDING',
+        ]);
+
+        return response()->json([
+            'message' => 'Dossier KWC Entreprise soumis avec succès. Vérification en cours.',
+            'documents' => $docsCreated,
+        ], 201);
+    }
+
+    public function afficherTousLesDocuments()
     {
         $kwcDocuments = KWCDocument::with('user')
-            ->where('statut', 'en attente')
+            ->orderBy('created_at', 'desc')
             ->get();
 
         return response()->json($kwcDocuments);
@@ -122,6 +170,14 @@ class KWCDocumentController extends Controller
         return response()->json(['message' => 'document valide avec succes']);
     }
 
+    public function getKycStatus(Request $request)
+    {
+        $userId = $request->user()->id;
+        $documents = KWCDocument::where('user_id', $userId)->get();
+
+        return response()->json($documents);
+    }
+
     public function rejeterDocument($id)
     {
         $document = KWCDocument::findOrFail($id);
@@ -146,11 +202,12 @@ class KWCDocumentController extends Controller
     public function supprimerDocument($id)
     {
         $document = KWCDocument::find($id);
-        if (!$document) {
+        if (! $document) {
             return response()->json(['message' => 'Document non trouvé'], 404);
         }
 
         $document->delete();
+
         return response()->json(['message' => 'document supprime avec succes']);
     }
 
@@ -159,11 +216,11 @@ class KWCDocumentController extends Controller
         $request->validate([
             'type' => 'required|string',
             'fichier' => 'required|file|mimes:pdf,jpeg,jpg,png|max:10240',
-            'commentaire' => 'nullable'
+            'commentaire' => 'nullable',
         ]);
 
         $document = KWCDocument::find($id);
-        if (!$document) {
+        if (! $document) {
             return response()->json(['message' => 'Document non trouvé'], 404);
         }
 
@@ -175,7 +232,7 @@ class KWCDocumentController extends Controller
             'user_id' => $user_id,
             'type' => 'doc',
             'chemin_fichier' => $chemin,
-            'commentaire' => $request->commentaire ?? ''
+            'commentaire' => $request->commentaire ?? '',
         ]);
 
         return response()->json([
