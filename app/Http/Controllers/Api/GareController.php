@@ -82,8 +82,9 @@ class GareController extends Controller
         $agence = Agence::find($request->agence_id);
         $data['nom'] = $agence->nom . ' - ' . $request->quartier;
         $data['adresse'] = $request->quartier;
-
         $gare = Gare::create($data);
+
+        $gare->update(['is_active',0]);
 
         return response()->json($gare, 201);
     }

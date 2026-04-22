@@ -149,8 +149,8 @@ class VoyageController extends Controller
     {
         $chauffeurId = $request->user()->id;
         $voyages = Voyage::with([
-            'trajet.villeDepart',
-            'trajet.villeArrivee',
+            'trajet.villeDepart:id,nom,region',
+            'trajet.villeArrivee:id,nom,region',
             'trajet',
             'bus',
             'chauffeur',
@@ -194,7 +194,8 @@ class VoyageController extends Controller
                     'code_bus' => $voyage->bus?->code_bus,
                     'statut' => $voyage->statut,
                     'chauffeur' => $voyage->chauffeur,
-                    'places_disponibles' => $voyage->places_disponibles,
+                    'prix' => $voyage->trajet?->prix,
+                    'places_disponibles' => $voyage->bus?->nb_places - Reservation::where('voyage_id',$voyage->id)->where('statut','validee')->count(),
                     'bus' => $voyage->bus,
                 ];
             });
